@@ -6,12 +6,15 @@ const port = process.env.PORT || 5000;
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.91k5x.mongodb.net/?appName=Cluster0`;
 
 
 // middle wares 
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',  // frontend URL
+  credentials: true
+}));
 app.use(express.json());   
 
 app.get('/', (req, res) => {
@@ -39,6 +42,7 @@ async function run() {
     const database = client.db("BistroDB");
     const menuCollection = database.collection("menu");
     const reviewCollection = database.collection("reviews");
+    const cartsCollection = database.collection("carts");
 
     app.get('/menu', async (req, res) => {
         
@@ -50,6 +54,50 @@ async function run() {
         const result = await reviewCollection.find().toArray();
         res.send(result);
     });
+
+    //carts collection api
+    app.get('/carts', async (req, res) => {
+        const email = req.query.email;
+        if (!email) {
+            return res.send([]);
+        }
+        const cartList = await cartsCollection.find({ 
+          userEmail: email }).toArray();
+
+          const detailedCart = await Promise.all(
+            cartList.map(async (cartItem) => {
+                const menuItem = await menuCollection.findOne({ _id: cartItem.menuId });
+                return {
+                  ...menuItem,
+                  cartId: cartItem._id // ✅ Unique identifier for each cart entry
+                };
+            })
+        );
+        // console.log(detailedCart);
+
+        res.send(detailedCart);
+    });
+
+    app.post('/carts', async (req, res) => {
+        const item = req.body;
+        const result = await cartsCollection.insertOne(item);
+        res.send(result);
+    });
+    
+    app.delete('/carts/:id', async (req, res) => {
+        const id = req.params.id;
+        const query = { menuId: id };
+        const result = await cartsCollection.deleteOne(query);
+        res.send(result);
+    });
+
+    app.delete('/carts/clear/:email', async (req, res) => {
+        const email = req.params.email;
+        const result = await cartsCollection.deleteMany({ userEmail: email });
+        res.send(result);
+    });
+
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
