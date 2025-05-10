@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
-require('dotenv').config() 
+require('dotenv').config()
 const port = process.env.PORT || 5000;
 
 
@@ -15,10 +15,10 @@ app.use(cors({
   origin: 'http://localhost:5173',  // frontend URL
   credentials: true
 }));
-app.use(express.json());   
+app.use(express.json());
 
 app.get('/', (req, res) => {
-    res.send('Hello from my server')
+  res.send('Hello from my server')
 });
 
 
@@ -40,61 +40,89 @@ async function run() {
     await client.connect();
 
     const database = client.db("BistroDB");
+    const usersCollection = database.collection("users");
     const menuCollection = database.collection("menu");
     const reviewCollection = database.collection("reviews");
     const cartsCollection = database.collection("carts");
 
     app.get('/menu', async (req, res) => {
-        
-        const result = await menuCollection.find().toArray();
-        res.send(result);
+
+      const result = await menuCollection.find().toArray();
+      res.send(result);
     });
 
     app.get('/reviews', async (req, res) => {
-        const result = await reviewCollection.find().toArray();
-        res.send(result);
+      const result = await reviewCollection.find().toArray();
+      res.send(result);
     });
+
+    // users
+
+    app.post('/users', async (req, res) => {
+      try {
+        const userEmail = req.body.email;
+        const existingUser = await usersCollection.findOne({
+          email: userEmail
+        });
+        if (existingUser) {
+          res.send({ message: 'user already exist', insertedId: null })
+        }
+        
+        else {
+          const newUser = req.body;
+          const result = await usersCollection.insertOne(newUser);
+          res.send(result);
+
+        }
+      } catch (error) {
+        res.status(500).send({
+          message: 'Error creating user',
+          error: error.message
+        })
+      }
+    })
 
     //carts collection api
     app.get('/carts', async (req, res) => {
-        const email = req.query.email;
-        if (!email) {
-            return res.send([]);
-        }
-        const cartList = await cartsCollection.find({ 
-          userEmail: email }).toArray();
+      const email = req.query.email;
+      if (!email) {
+        return res.send([]);
+      }
+      const cartList = await cartsCollection.find({
+        userEmail: email
+      }).toArray();
 
-          const detailedCart = await Promise.all(
-            cartList.map(async (cartItem) => {
-                const menuItem = await menuCollection.findOne({ _id: cartItem.menuId });
-                return {
-                  ...menuItem,
-                  cartId: cartItem._id // ✅ Unique identifier for each cart entry
-                };
-            })
-        );
-        // console.log(detailedCart);
+      const detailedCart = await Promise.all(
+        cartList.map(async (cartItem) => {
+          const menuItem = await menuCollection.findOne({ _id: cartItem.menuId });
+          return {
+            ...menuItem,
+            cartId: cartItem._id // ✅ Unique identifier for each cart entry
+          };
+        })
+      );
+      // console.log(detailedCart);
 
-        res.send(detailedCart);
+      res.send(detailedCart);
     });
 
     app.post('/carts', async (req, res) => {
-        const item = req.body;
-        const result = await cartsCollection.insertOne(item);
-        res.send(result);
+      const item = req.body;
+      const result = await cartsCollection.insertOne(item);
+      res.send(result);
     });
-    
+
     app.delete('/carts/:id', async (req, res) => {
-        const id = req.params.id;
-        const query = { menuId: id };
-        const result = await cartsCollection.deleteOne(query);
-        res.send(result);
+      const id = req.params.id;
+      const query = { menuId: id };
+      const result = await cartsCollection.deleteOne(query);
+      res.send(result);
     });
 
     app.delete('/carts/clear/:email', async (req, res) => {
-        const email = req.params.email;
-        const result = await cartsCollection.deleteMany({ userEmail: email });
-        res.send(result);
+      const email = req.params.email;
+      const result = await cartsCollection.deleteMany({ userEmail: email });
+      res.send(result);
     });
 
 
@@ -113,6 +141,6 @@ run().catch(console.dir);
 
 
 
-app.listen(port, () => {    
-    console.log(`Server is running on port: ${port}`)
+app.listen(port, () => {
+  console.log(`Server is running on port: ${port}`)
 });
