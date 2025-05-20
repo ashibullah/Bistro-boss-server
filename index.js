@@ -57,6 +57,25 @@ async function run() {
     });
 
     // users
+    // admin call all users 
+    app.get('/allusers', async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
+    // make admin
+    app.patch('/users/admin/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: 'admin'
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
     app.get('/user/:email', async (req, res) => {
       const userEmail = req.params.email;
       // console.log(userEmail)
