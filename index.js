@@ -76,6 +76,19 @@ async function run() {
       res.send(result);
     });
 
+    // remove admin
+    app.patch('/users/remove-admin/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: 'user'  // or you can use $unset: { role: "" } to remove the role field entirely
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
     app.get('/user/:email', async (req, res) => {
       const userEmail = req.params.email;
       // console.log(userEmail)
