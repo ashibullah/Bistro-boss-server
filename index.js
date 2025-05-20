@@ -51,11 +51,26 @@ async function run() {
       res.send(result);
     });
 
+    // review get and post 
     app.get('/reviews', async (req, res) => {
       const result = await reviewCollection.find().toArray();
       res.send(result);
     });
+    app.get('/reviews/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = {email : email}
+      const result = await reviewCollection.find(query).toArray();
+      res.send(result);
+    });
 
+    app.post('/reviews', async(req,res)=>{
+      const review = req.body;
+      const result = await reviewCollection.insertOne(review);
+      res.send(result);
+    })
+
+
+    
     // users
     // admin call all users 
     app.get('/allusers', async (req, res) => {
