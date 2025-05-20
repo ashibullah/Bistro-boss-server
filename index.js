@@ -51,6 +51,52 @@ async function run() {
       res.send(result);
     });
 
+    // Menu endpoints
+    app.post('/menu', async (req, res) => {
+      try {
+        const item = req.body;
+        const result = await menuCollection.insertOne(item);
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({
+          message: 'Error adding menu item',
+          error: error.message
+        });
+      }
+    });
+
+    app.patch('/menu/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const updatedItem = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: updatedItem
+        };
+        const result = await menuCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({
+          message: 'Error updating menu item',
+          error: error.message
+        });
+      }
+    });
+
+    app.delete('/menu/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const result = await menuCollection.deleteOne(filter);
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({
+          message: 'Error deleting menu item',
+          error: error.message
+        });
+      }
+    });
+
     // review get and post 
     app.get('/reviews', async (req, res) => {
       const result = await reviewCollection.find().toArray();
