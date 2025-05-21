@@ -211,7 +211,7 @@ async function run() {
 
       const detailedCart = await Promise.all(
         cartList.map(async (cartItem) => {
-          const menuItem = await menuCollection.findOne({ _id: cartItem.menuId });
+          const menuItem = await menuCollection.findOne({ _id: new ObjectId(cartItem.menuId) });
           return {
             ...menuItem,
             cartId: cartItem._id // ✅ Unique identifier for each cart entry
