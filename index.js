@@ -45,57 +45,56 @@ async function run() {
     const reviewCollection = database.collection("reviews");
     const cartsCollection = database.collection("carts");
 
+    // Menu endpoints
     app.get('/menu', async (req, res) => {
-
-      const result = await menuCollection.find().toArray();
-      res.send(result);
+        try {
+            const result = await menuCollection.find().toArray();
+            res.send(result);
+        } catch (error) {
+            res.status(500).send({ error: error.message });
+        }
     });
 
-    // Menu endpoints
     app.post('/menu', async (req, res) => {
-      try {
-        const item = req.body;
-        const result = await menuCollection.insertOne(item);
-        res.send(result);
-      } catch (error) {
-        res.status(500).send({
-          message: 'Error adding menu item',
-          error: error.message
-        });
-      }
+        try {
+            const item = req.body;
+            const result = await menuCollection.insertOne(item);
+            res.send(result);
+        } catch (error) {
+            res.status(500).send({ error: error.message });
+        }
     });
 
     app.patch('/menu/:id', async (req, res) => {
-      try {
-        const id = req.params.id;
-        const updatedItem = req.body;
-        const filter = { _id: new ObjectId(id) };
-        const updateDoc = {
-          $set: updatedItem
-        };
-        const result = await menuCollection.updateOne(filter, updateDoc);
-        res.send(result);
-      } catch (error) {
-        res.status(500).send({
-          message: 'Error updating menu item',
-          error: error.message
-        });
-      }
+        try {
+            const id = req.params.id;
+            const updatedItem = req.body;
+            // console.log(updatedItem);
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: updatedItem
+            };
+            const result = await menuCollection.updateOne(filter, updateDoc);
+            
+            res.send(result);
+        } catch (error) {
+            res.status(500).send({ error: error.message });
+        }
     });
 
     app.delete('/menu/:id', async (req, res) => {
-      try {
-        const id = req.params.id;
-        const filter = { _id: new ObjectId(id) };
-        const result = await menuCollection.deleteOne(filter);
-        res.send(result);
-      } catch (error) {
-        res.status(500).send({
-          message: 'Error deleting menu item',
-          error: error.message
-        });
-      }
+        try {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            
+            const result = await menuCollection.deleteOne(filter);
+            // console.log(result);
+            res.send(result);
+        } catch (error) {
+            res.status(500).send({ error: error.message });
+        }
     });
+
 
     // review get and post 
     app.get('/reviews', async (req, res) => {
