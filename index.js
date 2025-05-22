@@ -74,6 +74,17 @@ async function run() {
       }
     });
 
+    app.get('/menu/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await menuCollection.findOne(query);
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: error.message });
+      }
+    });
+
     app.post('/menu', async (req, res) => {
       try {
         const item = req.body;
@@ -298,25 +309,21 @@ async function run() {
       }
     });
     // Get orders by user email
-    app.get('/orders/:email', async (req, res) => {
+    app.post('/userOrders', async (req, res) => {
+      const email = req.body.email;
+      const query = { email: email };
+      const result = await orderCollection.find(query).toArray();
+      res.send(result);
+
+    })
+    app.delete('/orders/delete-all', async (req, res) => {
       try {
-        const email = req.params.email;
-        const query = { email: email };
-        const result = await orderCollection.find(query).toArray();
-        res.send(result);
+        const result = await orderCollection.deleteMany({}); // Empty filter deletes all
+        res.send({ message: 'All orders deleted', deletedCount: result.deletedCount });
       } catch (error) {
         res.status(500).send({ error: error.message });
       }
     });
-
-    // user order list 
-    app.post('/userOrders',async (req, res)=>{
-      const email = req.body.email;
-      const query = {email : email};
-      const result = await orderCollection.find(query).toArray();
-      res.send(result);
-      
-    })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
