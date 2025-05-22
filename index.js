@@ -1,10 +1,29 @@
+const http = require('http');
+const { Server } = require('socket.io');
 const express = require('express');
 const app = express();
 const cors = require('cors');
 require('dotenv').config()
 const port = process.env.PORT || 5000;
 
+const server = http.createServer(app);
 
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",  // your React frontend
+    methods: ["GET", "POST", "PATCH", "DELETE"],
+    credentials: true
+  }
+});
+
+// Add this after creating io instance
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.91k5x.mongodb.net/?appName=Cluster0`;
@@ -15,6 +34,8 @@ app.use(cors({
   origin: 'http://localhost:5173',  // frontend URL
   credentials: true
 }));
+
+
 app.use(express.json());
 
 app.get('/', (req, res) => {
@@ -48,52 +69,52 @@ async function run() {
 
     // Menu endpoints
     app.get('/menu', async (req, res) => {
-        try {
-            const result = await menuCollection.find().toArray();
-            res.send(result);
-        } catch (error) {
-            res.status(500).send({ error: error.message });
-        }
+      try {
+        const result = await menuCollection.find().toArray();
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: error.message });
+      }
     });
 
     app.post('/menu', async (req, res) => {
-        try {
-            const item = req.body;
-            const result = await menuCollection.insertOne(item);
-            res.send(result);
-        } catch (error) {
-            res.status(500).send({ error: error.message });
-        }
+      try {
+        const item = req.body;
+        const result = await menuCollection.insertOne(item);
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: error.message });
+      }
     });
 
     app.patch('/menu/:id', async (req, res) => {
-        try {
-            const id = req.params.id;
-            const updatedItem = req.body;
-            // console.log(updatedItem);
-            const filter = { _id: new ObjectId(id) };
-            const updateDoc = {
-                $set: updatedItem
-            };
-            const result = await menuCollection.updateOne(filter, updateDoc);
-            
-            res.send(result);
-        } catch (error) {
-            res.status(500).send({ error: error.message });
-        }
+      try {
+        const id = req.params.id;
+        const updatedItem = req.body;
+        // console.log(updatedItem);
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: updatedItem
+        };
+        const result = await menuCollection.updateOne(filter, updateDoc);
+
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: error.message });
+      }
     });
 
     app.delete('/menu/:id', async (req, res) => {
-        try {
-            const id = req.params.id;
-            const filter = { _id: new ObjectId(id) };
-            
-            const result = await menuCollection.deleteOne(filter);
-            // console.log(result);
-            res.send(result);
-        } catch (error) {
-            res.status(500).send({ error: error.message });
-        }
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+
+        const result = await menuCollection.deleteOne(filter);
+        // console.log(result);
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: error.message });
+      }
     });
 
 
@@ -104,19 +125,19 @@ async function run() {
     });
     app.get('/reviews/:email', async (req, res) => {
       const email = req.params.email;
-      const query = {email : email}
+      const query = { email: email }
       const result = await reviewCollection.find(query).toArray();
       res.send(result);
     });
 
-    app.post('/reviews', async(req,res)=>{
+    app.post('/reviews', async (req, res) => {
       const review = req.body;
       const result = await reviewCollection.insertOne(review);
       res.send(result);
     })
 
 
-    
+
     // users
     // admin call all users 
     app.get('/allusers', async (req, res) => {
@@ -245,56 +266,65 @@ async function run() {
 
     // Order endpoints
     app.get('/orders', async (req, res) => {
-        try {
-            const result = await orderCollection.find().toArray();
-            res.send(result);
-        } catch (error) {
-            res.status(500).send({ error: error.message });
-        }
+      try {
+        const result = await orderCollection.find().toArray();
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: error.message });
+      }
     });
 
     app.post('/orders', async (req, res) => {
-        try {
-            const order = req.body;
-            const result = await orderCollection.insertOne(order);
-            res.send(result);
-        } catch (error) {
-            res.status(500).send({ error: error.message });
+      try {
+        const order = req.body;
+        const result = await orderCollection.insertOne(order);
+        if (result.insertedId) {
+          // Emit new order event to all connected clients
+          io.emit('new-order', order);
+          res.send(result);
         }
+      } catch (error) {
+        console.error('Order creation error:', error);
+        res.status(500).send({ error: error.message });
+      }
     });
 
     app.patch('/orders/:id', async (req, res) => {
-        try {
-            const id = req.params.id;
-            const { status } = req.body;
-            const filter = { _id: new ObjectId(id) };
-            const updateDoc = {
-                $set: { status }
-            };
-            const result = await orderCollection.updateOne(filter, updateDoc);
-            res.send(result);
-        } catch (error) {
-            res.status(500).send({ error: error.message });
-        }
+      try {
+        const id = req.params.id;
+        const { status } = req.body;
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: { status }
+        };
+        const result = await orderCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: error.message });
+      }
     });
 
     // Get orders by user email
     app.get('/orders/:email', async (req, res) => {
-        try {
-            const email = req.params.email;
-            const query = { email: email };
-            const result = await orderCollection.find(query).toArray();
-            res.send(result);
-        } catch (error) {
-            res.status(500).send({ error: error.message });
-        }
+      try {
+        const email = req.params.email;
+        const query = { email: email };
+        const result = await orderCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({ error: error.message });
+      }
     });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
+  } catch (error) {
+    console.error('Database connection error:', error);
+    // Optionally close the server on fatal errors
+    // server.close();
   } finally {
-    // Ensures that the client will close when you finish/error
+    // Uncomment if you want to close on shutdown
     // await client.close();
   }
 }
@@ -304,6 +334,11 @@ run().catch(console.dir);
 
 
 
-app.listen(port, () => {
-  console.log(`Server is running on port: ${port}`)
+server.listen(port, () => {
+  console.log(`Server is running with Socket.IO on port: ${port}`);
 });
+
+
+
+
+
