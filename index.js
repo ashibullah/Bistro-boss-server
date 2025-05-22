@@ -44,6 +44,7 @@ async function run() {
     const menuCollection = database.collection("menu");
     const reviewCollection = database.collection("reviews");
     const cartsCollection = database.collection("carts");
+    const orderCollection = database.collection("orders");
 
     // Menu endpoints
     app.get('/menu', async (req, res) => {
@@ -242,7 +243,52 @@ async function run() {
       res.send(result);
     });
 
+    // Order endpoints
+    app.get('/orders', async (req, res) => {
+        try {
+            const result = await orderCollection.find().toArray();
+            res.send(result);
+        } catch (error) {
+            res.status(500).send({ error: error.message });
+        }
+    });
 
+    app.post('/orders', async (req, res) => {
+        try {
+            const order = req.body;
+            const result = await orderCollection.insertOne(order);
+            res.send(result);
+        } catch (error) {
+            res.status(500).send({ error: error.message });
+        }
+    });
+
+    app.patch('/orders/:id', async (req, res) => {
+        try {
+            const id = req.params.id;
+            const { status } = req.body;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: { status }
+            };
+            const result = await orderCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        } catch (error) {
+            res.status(500).send({ error: error.message });
+        }
+    });
+
+    // Get orders by user email
+    app.get('/orders/:email', async (req, res) => {
+        try {
+            const email = req.params.email;
+            const query = { email: email };
+            const result = await orderCollection.find(query).toArray();
+            res.send(result);
+        } catch (error) {
+            res.status(500).send({ error: error.message });
+        }
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
