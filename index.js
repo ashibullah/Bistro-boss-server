@@ -43,9 +43,6 @@ app.get('/', (req, res) => {
 });
 
 
-
-
-
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -117,12 +114,12 @@ async function run() {
       }
     });
 
-
     // review get and post 
     app.get('/reviews', async (req, res) => {
       const result = await reviewCollection.find().toArray();
       res.send(result);
     });
+
     app.get('/reviews/:email', async (req, res) => {
       const email = req.params.email;
       const query = { email: email }
@@ -135,9 +132,6 @@ async function run() {
       const result = await reviewCollection.insertOne(review);
       res.send(result);
     })
-
-
-
     // users
     // admin call all users 
     app.get('/allusers', async (req, res) => {
@@ -303,7 +297,6 @@ async function run() {
         res.status(500).send({ error: error.message });
       }
     });
-
     // Get orders by user email
     app.get('/orders/:email', async (req, res) => {
       try {
@@ -316,6 +309,14 @@ async function run() {
       }
     });
 
+    // user order list 
+    app.post('/userOrders',async (req, res)=>{
+      const email = req.body.email;
+      const query = {email : email};
+      const result = await orderCollection.find(query).toArray();
+      res.send(result);
+      
+    })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
