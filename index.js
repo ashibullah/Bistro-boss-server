@@ -10,7 +10,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",  // your React frontend
+    origin: "https://bistro-boss-be236.web.app",  // your React frontend
     methods: ["GET", "POST", "PATCH", "DELETE"],
     credentials: true
   }
@@ -31,7 +31,7 @@ const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}
 
 // middle wares 
 app.use(cors({
-  origin: 'http://localhost:5173',  // frontend URL
+  origin: 'https://bistro-boss-be236.web.app',  // frontend URL
   credentials: true
 }));
 
@@ -55,7 +55,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const database = client.db("BistroDB");
     const usersCollection = database.collection("users");
@@ -325,7 +325,7 @@ async function run() {
       }
     });
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } catch (error) {
     console.error('Database connection error:', error);
